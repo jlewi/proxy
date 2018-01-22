@@ -21,7 +21,16 @@ BAZEL_STARTUP_ARGS ?=
 BAZEL_BUILD_ARGS ?=
 BAZEL_TEST_ARGS ?=
 HUB ?=
-TAG ?=
+TAG := $(shell date +v%Y%m%d)-$(shell git describe --tags --always --dirty)-$(shell git diff | sha256sum | cut -c -6)
+BUILD_DIR=/tmp/build-${TAG}
+IMAGE=gcr.io/kubeflow-rl/envoy:$(TAG)
+
+docker:
+	@mkdir -p $(BUILD_DIR)
+	@cp -f bazel-bin/src/envoy/auth/envoy $(BUILD_DIR)
+	@cp -f docker/Dockerfile.kubeflow $(BUILD_DIR)
+	@docker build -t $(IMAGE) -f $(BUILD_DIR)/Dockerfile.kubeflow $(BUILD_DIR)
+	@gcloud docker -- push  $(IMAGE)
 
 build:
 	@bazel $(BAZEL_STARTUP_ARGS) build $(BAZEL_BUILD_ARGS) //...
@@ -52,4 +61,4 @@ deb:
 	bazel build tools/deb:istio-proxy  ${BAZEL_BUILD_ARGS}
 
 
-.PHONY: build clean test check artifacts
+.PHONY: build clean test check artifacts docker
