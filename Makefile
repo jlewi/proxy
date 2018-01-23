@@ -27,6 +27,7 @@ IMAGE=gcr.io/kubeflow-rl/envoy:$(TAG)
 
 docker:
 	@mkdir -p $(BUILD_DIR)
+	@bazel build src/envoy/auth:envoy
 	@cp -f bazel-bin/src/envoy/auth/envoy $(BUILD_DIR)
 	@cp -f docker/Dockerfile.kubeflow $(BUILD_DIR)
 	@docker build -t $(IMAGE) -f $(BUILD_DIR)/Dockerfile.kubeflow $(BUILD_DIR)

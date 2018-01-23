@@ -51,10 +51,17 @@ void JwtVerificationFilter::onDestroy() {
 FilterHeadersStatus JwtVerificationFilter::decodeHeaders(HeaderMap& headers,
                                                          bool) {
   ENVOY_LOG(debug, "Called JwtVerificationFilter : {}", __func__);
-  const HeaderEntry* entry = headers.get(kAuthorizationHeaderKey);
-  if (!entry) {
-    return FilterHeadersStatus::Continue;
-  }
+  //const HeaderEntry* entry = headers.get(kAuthorizationHeaderKey);
+  //if (!entry) {
+    // TODO(jlewi): We need to allow requests througth to allow http health checks for ingress
+  //  ENVOY_LOG(info, "Allowing request with no JWT  {}", __func__);
+  //  return FilterHeadersStatus::Continue;
+    // TODO(jlewi): This is a hack until https://github.com/istio/proxy/issues/929 is fixed
+    // The purpose of this is to reject requests without JWT
+    // ENVOY_LOG(info, "Request doesn't have JWT: {}", __func__);
+    // stopped_ = true;
+    //return FilterHeadersStatus::StopIteration;
+  //}
 
   state_ = Calling;
   stopped_ = false;
