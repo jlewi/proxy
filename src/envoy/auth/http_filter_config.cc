@@ -18,6 +18,7 @@
 
 #include "envoy/registry/registry.h"
 
+#include <iostream>
 #include <string>
 
 namespace Envoy {

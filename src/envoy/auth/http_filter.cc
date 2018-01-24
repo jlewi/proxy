@@ -109,12 +109,15 @@ FilterHeadersStatus JwtVerificationFilter::decodeHeaders(HeaderMap& headers,
    * key completed
    */
 
-  ENVOY_LOG(info, "Check issuers : {}", __func__);
+  ENVOY_LOG(info, "Loading issuers : {}", __func__);
   // list up issuers whose public key should be fetched
   for (const auto& iss : config_->issuers_) {
+    std::cout << "Loading an issuer." << std::endl;
     if (!iss->failed_ && !iss->loaded_) {
+      std::cout << "Loading issuer."  << iss->name_ << std::endl;
       calling_issuers_[iss->name_] = std::make_pair(iss, nullptr);
     }
+    std::cout << "Done loading issuer." << std::endl;
   }
   // send HTTP requests to fetch public keys
   if (!calling_issuers_.empty()) {
@@ -223,16 +226,23 @@ std::string JwtVerificationFilter::Verify(HeaderMap& headers) {
 
   bool iss_aud_matched = false;
   Auth::Verifier v;
+  std::cout << "Check issuers " << std::endl;
   for (const auto& iss : config_->issuers_) {
           ENVOY_LOG(info, "LEWI DEBUG : {}", __func__);
+    std::cout << "Check issuer: " << iss->name_ << std::endl;
     if (iss->failed_ || iss->pkey_->GetStatus() != Auth::Status::OK) {
+      std::cout << "issuer " << iss->name_ << " not ok: failed: " << iss->failed_ << " pkey GetStatus: " << StatusToString(iss->pkey_->GetStatus()) << std::endl;
       continue;
     }
+    std::cout << "Check issuer iss->name_" << iss->name_ << " jwt.Iss() << " << jwt.Iss() << std::endl;
     // Check "iss" claim.
     if (jwt.Iss() != iss->name_) {
+       std::cout << "issuer didn't match iss->name_" << iss->name_ << " jwt.Iss() << " << jwt.Iss() << std::endl;
       continue;
     }
+    std::cout << "Checking audience: " << jwt.Aud() << std::endl;
     if (!iss->IsAudienceAllowed(jwt.Aud())) {
+      std::cout << "Audience: " << jwt.Aud() << " is not allowed." << std::endl;
       continue;
     }
 

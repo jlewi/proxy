@@ -240,17 +240,18 @@ Jwt::Jwt(const std::string &jwt) {
   }
 
   std::cout << "JWT algorithm " <<  alg_ << std::endl;
-  
+
   // Prepare EVP_MD object.
-  if (alg_ == "RS256") {
+  //if (alg_ == "RS256") {
     // may use
     // EVP_sha384() if alg == "RS384" and
     // EVP_sha512() if alg == "RS512"
-    md_ = EVP_sha256();
-  } else {
-    UpdateStatus(Status::ALG_NOT_IMPLEMENTED);
-    return;
-  }
+  // TODO(jlewi) using EVP_sha256 always is a hack we should check what the algorithm is once we know what string IAP uses
+     md_ = EVP_sha256();
+  // } else {
+  //  UpdateStatus(Status::ALG_NOT_IMPLEMENTED);
+  //  return;
+  // }
 
   // Header may contain "kid", which should be a string if exists.
   try {

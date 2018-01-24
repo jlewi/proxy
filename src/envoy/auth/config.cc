@@ -204,8 +204,10 @@ JwtAuthConfig::JwtAuthConfig(const Json::Object &config,
     ENVOY_LOG(debug, "JwtAuthConfig: {}, Bad issuers", __func__);
     abort();
   }
+  std::cout << "Load issuers into issuers_ " << std::endl;
   for (auto issuer_json : issuer_jsons) {
     auto issuer = std::make_shared<IssuerInfo>(issuer_json.get());
+    std::cout << "Loaded issuer " << issuer->name_ << std::endl;
     issuers_.push_back(issuer);
   }
 }
