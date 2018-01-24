@@ -43,9 +43,12 @@ class JwtVerificationFilter : public StreamDecoderFilter,
   void setDecoderFilterCallbacks(
       StreamDecoderFilterCallbacks& callbacks) override;
 
+  //  const LowerCaseString kAuthorizationHeaderKey =
+  //    LowerCaseString("Authorization");
+  // const std::string kAuthorizationHeaderTokenPrefix = "Bearer ";
   const LowerCaseString kAuthorizationHeaderKey =
-      LowerCaseString("Authorization");
-  const std::string kAuthorizationHeaderTokenPrefix = "Bearer ";
+      LowerCaseString("x-goog-iap-jwt-assertion");
+  const std::string kAuthorizationHeaderTokenPrefix = "";
   static const LowerCaseString& AuthorizedHeaderKey();
 
  private:

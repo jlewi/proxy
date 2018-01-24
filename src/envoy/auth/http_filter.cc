@@ -85,7 +85,7 @@ FilterHeadersStatus JwtVerificationFilter::decodeHeaders(HeaderMap& headers,
   PrintHeaders(headers);
   const HeaderEntry* entry = headers.get(kAuthorizationHeaderKey);
   if (!entry) {
-    std::cout << "MISSING HEADER " << kAuthorizationHeaderKey << std::endl;
+    //std::cout << "MISSING HEADER " << kAuthorizationHeaderKey << std::endl;
     ENVOY_LOG(info, "No authorization header rejecting the request : {}", __func__);
     // This will set the response to not authorized since no header is present.
     CompleteVerification(headers);
@@ -194,10 +194,11 @@ std::string JwtVerificationFilter::Verify(HeaderMap& headers) {
     return "NO_AUTHORIZATION_HEADER";
   }
   const HeaderString& value = entry->value();
-  if (strncmp(value.c_str(), kAuthorizationHeaderTokenPrefix.c_str(),
-              kAuthorizationHeaderTokenPrefix.length()) != 0) {
-    return "AUTHORIZATION_HEADER_BAD_FORMAT";
-  }
+  // Hack to support IAP
+  // if (strncmp(value.c_str(), kAuthorizationHeaderTokenPrefix.c_str(),
+  //            kAuthorizationHeaderTokenPrefix.length()) != 0) {
+  //  return "AUTHORIZATION_HEADER_BAD_FORMAT";
+  // }
   Auth::Jwt jwt(value.c_str() + kAuthorizationHeaderTokenPrefix.length());
   if (jwt.GetStatus() != Auth::Status::OK) {
     // Invalid JWT
