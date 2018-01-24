@@ -83,6 +83,7 @@ FilterHeadersStatus JwtVerificationFilter::decodeHeaders(HeaderMap& headers,
                                                          bool) {
   ENVOY_LOG(debug, "Called JwtVerificationFilter : {}", __func__);
   PrintHeaders(headers);
+  std::cout << "Get headers" << std::endl;
   const HeaderEntry* entry = headers.get(kAuthorizationHeaderKey);
   if (!entry) {
     //std::cout << "MISSING HEADER " << kAuthorizationHeaderKey << std::endl;
@@ -117,6 +118,7 @@ FilterHeadersStatus JwtVerificationFilter::decodeHeaders(HeaderMap& headers,
   }
   // send HTTP requests to fetch public keys
   if (!calling_issuers_.empty()) {
+    ENVOY_LOG(info, "Some issuers : {}", __func__);
     for (const auto& iss : config_->issuers_) {
       if (iss->failed_ || iss->loaded_) {
         continue;
@@ -132,19 +134,20 @@ FilterHeadersStatus JwtVerificationFilter::decodeHeaders(HeaderMap& headers,
     }
   } else {
     // If we do not need to fetch any public keys, just proceed to verification.
+    ENVOY_LOG(info, "No issuers : {}", __func__);
     CompleteVerification(headers);
   }
 
   if (state_ == Complete) {
     return FilterHeadersStatus::Continue;
   }
-  ENVOY_LOG(debug, "Called JwtVerificationFilter : {} Stop", __func__);
+  ENVOY_LOG(info, "Called JwtVerificationFilter : {} Stop", __func__);
   stopped_ = true;
   return FilterHeadersStatus::StopIteration;
 }
 
 FilterDataStatus JwtVerificationFilter::decodeData(Buffer::Instance&, bool) {
-  ENVOY_LOG(debug, "Called JwtVerificationFilter : {}", __func__);
+  ENVOY_LOG(info, "Called JwtVerificationFilter : {}", __func__);
   if (state_ == Calling) {
     return FilterDataStatus::StopIterationAndBuffer;
   }
@@ -152,7 +155,7 @@ FilterDataStatus JwtVerificationFilter::decodeData(Buffer::Instance&, bool) {
 }
 
 FilterTrailersStatus JwtVerificationFilter::decodeTrailers(HeaderMap&) {
-  ENVOY_LOG(debug, "Called JwtVerificationFilter : {}", __func__);
+  ENVOY_LOG(info, "Called JwtVerificationFilter : {}", __func__);
   if (state_ == Calling) {
     return FilterTrailersStatus::StopIteration;
   }
@@ -161,14 +164,14 @@ FilterTrailersStatus JwtVerificationFilter::decodeTrailers(HeaderMap&) {
 
 void JwtVerificationFilter::setDecoderFilterCallbacks(
     StreamDecoderFilterCallbacks& callbacks) {
-  ENVOY_LOG(debug, "Called JwtVerificationFilter : {}", __func__);
+  ENVOY_LOG(info, "Called JwtVerificationFilter : {}", __func__);
   decoder_callbacks_ = &callbacks;
 }
 
 void JwtVerificationFilter::ReceivePubkey(HeaderMap& headers,
                                           std::string issuer_name, bool succeed,
                                           const std::string& pubkey) {
-  ENVOY_LOG(debug, "Called JwtVerificationFilter : {} , issuer = {}", __func__,
+  ENVOY_LOG(info, "Called JwtVerificationFilter : {} , issuer = {}", __func__,
             issuer_name);
   auto iss_it = calling_issuers_.find(issuer_name);
   auto& iss = iss_it->second.first;
@@ -189,11 +192,15 @@ void JwtVerificationFilter::ReceivePubkey(HeaderMap& headers,
  * TODO: status as enum class
  */
 std::string JwtVerificationFilter::Verify(HeaderMap& headers) {
+  ENVOY_LOG(info, "LEWI DEBUG : {}", __func__);
   const HeaderEntry* entry = headers.get(kAuthorizationHeaderKey);
   if (!entry) {
     return "NO_AUTHORIZATION_HEADER";
   }
+   ENVOY_LOG(info, "LEWI DEBUG : {}", __func__);
+  std::cout << "Get JWT value" <<std::endl;
   const HeaderString& value = entry->value();
+  std::cout << "JWT header value= " << value.c_str() << std::endl;
   // Hack to support IAP
   // if (strncmp(value.c_str(), kAuthorizationHeaderTokenPrefix.c_str(),
   //            kAuthorizationHeaderTokenPrefix.length()) != 0) {
@@ -201,10 +208,11 @@ std::string JwtVerificationFilter::Verify(HeaderMap& headers) {
   // }
   Auth::Jwt jwt(value.c_str() + kAuthorizationHeaderTokenPrefix.length());
   if (jwt.GetStatus() != Auth::Status::OK) {
+    ENVOY_LOG(info, "LEWI DEBUG : {}", __func__);
     // Invalid JWT
     return Auth::StatusToString(jwt.GetStatus());
   }
-
+  ENVOY_LOG(info, "LEWI DEBUG : {}", __func__);
   // Check "exp" claim.
   auto unix_timestamp = std::chrono::duration_cast<std::chrono::seconds>(
                             std::chrono::system_clock::now().time_since_epoch())
@@ -216,6 +224,7 @@ std::string JwtVerificationFilter::Verify(HeaderMap& headers) {
   bool iss_aud_matched = false;
   Auth::Verifier v;
   for (const auto& iss : config_->issuers_) {
+          ENVOY_LOG(info, "LEWI DEBUG : {}", __func__);
     if (iss->failed_ || iss->pkey_->GetStatus() != Auth::Status::OK) {
       continue;
     }
@@ -254,13 +263,13 @@ std::string JwtVerificationFilter::Verify(HeaderMap& headers) {
 }
 
 void JwtVerificationFilter::CompleteVerification(HeaderMap& headers) {
-  ENVOY_LOG(debug, "Called JwtVerificationFilter : {}", __func__);
+  ENVOY_LOG(info, "Called JwtVerificationFilter : {}", __func__);
   if (state_ == Responded) {
     // This stream has been reset, abort the callback.
     return;
   }
   std::string status = Verify(headers);
-  ENVOY_LOG(debug, "Verification status = {}", status);
+  ENVOY_LOG(info, "Verification status = {}", status);
   if (status != "OK") {
     // verification failed
     Code code = Code(401);  // Unauthorized

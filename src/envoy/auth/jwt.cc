@@ -17,6 +17,7 @@
 
 #include "common/common/assert.h"
 #include "common/common/base64.h"
+
 #include "common/common/utility.h"
 #include "common/json/json_loader.h"
 #include "openssl/bn.h"
@@ -238,6 +239,8 @@ Jwt::Jwt(const std::string &jwt) {
     return;
   }
 
+  std::cout << "JWT algorithm " <<  alg_ << std::endl;
+  
   // Prepare EVP_MD object.
   if (alg_ == "RS256") {
     // may use

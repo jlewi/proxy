@@ -16,10 +16,12 @@
 #ifndef PROXY_JWT_H
 #define PROXY_JWT_H
 
+#include "common/common/logger.h"
 #include "envoy/json/json_object.h"
 #include "openssl/evp.h"
 
 #include <string>
+#include <iostream>
 #include <utility>
 #include <vector>
 
