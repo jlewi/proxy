@@ -23,11 +23,42 @@
 #include "server/config/network/http_connection_manager.h"
 
 #include <chrono>
+#include <iostream>
 #include <string>
 
 namespace Envoy {
 namespace Http {
 
+   HeaderMap::Iterate PrintHeaderEntry(const HeaderEntry& header, void*context) {
+    //		      std::ostream* os = static_cast<std::ostream*>(context);
+    if (context) {
+      std::cout << "hack to avoid clang errors about unused variable";
+    }
+    std::cout << "Got header " << header.key().c_str() << "=" <<  header.value().c_str() << std::endl;
+  return HeaderMap::Iterate::Continue;
+  }
+
+  void PrintHeaders(const HeaderMap& headers) {
+    headers.iterate(&PrintHeaderEntry, nullptr);
+  }
+  // copied from https://github.com/envoyproxy/envoy/blob/0efa18c36d6f789562690b5053c2c4b00987979e/test/test_common/printers.cc
+  //void PrintTo(const HeaderMap& headers, std::ostream* os) {
+  //  headers.iterate(
+  //		    [](const HeaderEntry& header, void* context) -> void {
+  //		      std::ostream* os = static_cast<std::ostream*>(context);
+  //		      *os << "{'" << header.key().c_str() << "','" << header.value().c_str() << "'}";
+  //		    },
+  //		    os);
+  //}
+
+  //  void PrintTo(const HeaderMapPtr& headers, std::ostream* os) {
+  //  PrintTo(*dynamic_cast<HeaderMapImpl*>(headers.get()), os);
+  // }
+
+  //void PrintTo(const HeaderMap& headers, std::ostream* os) {
+  //  PrintTo(*dynamic_cast<const HeaderMapImpl*>(&headers), os);
+  //}
+  
 const LowerCaseString& JwtVerificationFilter::AuthorizedHeaderKey() {
   static LowerCaseString* key = new LowerCaseString("sec-istio-auth-userinfo");
   return *key;
@@ -51,8 +82,13 @@ void JwtVerificationFilter::onDestroy() {
 FilterHeadersStatus JwtVerificationFilter::decodeHeaders(HeaderMap& headers,
                                                          bool) {
   ENVOY_LOG(debug, "Called JwtVerificationFilter : {}", __func__);
-  //const HeaderEntry* entry = headers.get(kAuthorizationHeaderKey);
-  //if (!entry) {
+  PrintHeaders(headers);
+  const HeaderEntry* entry = headers.get(kAuthorizationHeaderKey);
+  if (!entry) {
+    std::cout << "MISSING HEADER " << kAuthorizationHeaderKey << std::endl;
+    ENVOY_LOG(info, "No authorization header rejecting the request : {}", __func__);
+    // This will set the response to not authorized since no header is present.
+    CompleteVerification(headers);
     // TODO(jlewi): We need to allow requests througth to allow http health checks for ingress
   //  ENVOY_LOG(info, "Allowing request with no JWT  {}", __func__);
   //  return FilterHeadersStatus::Continue;
@@ -60,8 +96,8 @@ FilterHeadersStatus JwtVerificationFilter::decodeHeaders(HeaderMap& headers,
     // The purpose of this is to reject requests without JWT
     // ENVOY_LOG(info, "Request doesn't have JWT: {}", __func__);
     // stopped_ = true;
-    //return FilterHeadersStatus::StopIteration;
-  //}
+    return FilterHeadersStatus::StopIteration;
+  }
 
   state_ = Calling;
   stopped_ = false;
@@ -72,6 +108,7 @@ FilterHeadersStatus JwtVerificationFilter::decodeHeaders(HeaderMap& headers,
    * key completed
    */
 
+  ENVOY_LOG(info, "Check issuers : {}", __func__);
   // list up issuers whose public key should be fetched
   for (const auto& iss : config_->issuers_) {
     if (!iss->failed_ && !iss->loaded_) {

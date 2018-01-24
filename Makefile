@@ -32,7 +32,7 @@ docker:
 	@cp -f docker/Dockerfile.kubeflow $(BUILD_DIR)
 	@docker build -t $(IMAGE) -f $(BUILD_DIR)/Dockerfile.kubeflow $(BUILD_DIR)
 	@gcloud docker -- push  $(IMAGE)
-
+	@echo pushed $(IMAGE)
 build:
 	@bazel $(BAZEL_STARTUP_ARGS) build $(BAZEL_BUILD_ARGS) //...
 
